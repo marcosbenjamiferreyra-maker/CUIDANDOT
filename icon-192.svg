@@ -1,0 +1,159 @@
+// Netlify Function: send-alerts.js
+// Esta función es llamada cada hora por cron-job.org
+// Revisa qué usuarios tienen items por agotarse HOY
+// y manda notificación push solo si coincide con la hora configurada
+
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
+
+// ─── Inicializar Firebase Admin (una sola vez) ───────────────────────────────
+function getFirebaseAdmin() {
+  if (getApps().length > 0) return getApps()[0];
+
+  const privateKey = (process.env.FIREBASE_PRIVATE_KEY || '')
+    .replace(/\\n/g, '\n');
+
+  return initializeApp({
+    credential: cert({
+      projectId:   process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey
+    })
+  });
+}
+
+// ─── Calcular días restantes de un item ──────────────────────────────────────
+function diasRestantes(item) {
+  const ahora      = Date.now();
+  const recargado  = item.recargadoEn || item.creadoEn || ahora;
+  const duracion   = (item.diasDuracion || 1) * 24 * 60 * 60 * 1000;
+  const restante   = (recargado + duracion - ahora) / (1000 * 60 * 60 * 24);
+  return restante;
+}
+
+// ─── Construir mensaje de notificación ───────────────────────────────────────
+function buildMessages(userData) {
+  const { token, config, items } = userData;
+  const persona = config.persona || 'la persona cuidada';
+  const messages = [];
+
+  (items || []).forEach(item => {
+    const dias = diasRestantes(item);
+    // Avisar cuando queda entre 0.9 y 2 días (margen para que no spamee)
+    if (dias >= 0.9 && dias <= 2) {
+      const nombre = item.nombre || 'un producto';
+      let body;
+      if (dias <= 1) {
+        body = `¡A ${persona} se le acaba ${nombre} hoy! Acordate de comprarlo.`;
+      } else {
+        body = `A ${persona} le queda 1 día de ${nombre}. Mañana se agota.`;
+      }
+      messages.push({
+        token,
+        notification: {
+          title: `🌿 Cuidado Diario — ${persona}`,
+          body
+        },
+        android: {
+          priority: 'high',
+          notification: { sound: 'default', channelId: 'cuidado-alertas' }
+        },
+        apns: {
+          payload: { aps: { sound: 'default', badge: 1 } }
+        }
+      });
+    }
+  });
+
+  return messages;
+}
+
+// ─── Handler principal ────────────────────────────────────────────────────────
+exports.handler = async (event) => {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json'
+  };
+
+  // Verificar clave secreta para que nadie más pueda llamar esta función
+  const secret = event.headers['x-cron-secret'] || '';
+  const expectedSecret = process.env.CRON_SECRET || '';
+  if (expectedSecret && secret !== expectedSecret) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
+  }
+
+  try {
+    getFirebaseAdmin();
+    const messaging = getMessaging();
+
+    // Leer todos los usuarios registrados
+    let tokensData = {};
+    try {
+      tokensData = JSON.parse(process.env.TOKENS_DATA || '{}');
+    } catch(e) { tokensData = {}; }
+
+    const horaActualUTC = new Date().getUTCHours();
+    const minActualUTC  = new Date().getUTCMinutes();
+    // Argentina es UTC-3 (ajustá si tu zona es diferente)
+    const OFFSET_HORAS  = -3;
+    const horaLocal     = ((horaActualUTC + OFFSET_HORAS) + 24) % 24;
+
+    const allMessages = [];
+    const resultados  = [];
+
+    Object.values(tokensData).forEach(userData => {
+      const { config } = userData;
+
+      // Si el usuario desactivó notificaciones, saltar
+      if (config.notifOff) return;
+
+      // Verificar si es la hora configurada por el usuario (ventana de ±5 min)
+      const [horaConf, minConf] = (config.hora || '09:00').split(':').map(Number);
+      const minTotalActual = horaLocal * 60 + minActualUTC;
+      const minTotalConf   = horaConf  * 60 + minConf;
+      const diff           = Math.abs(minTotalActual - minTotalConf);
+
+      if (diff > 5) return; // No es la hora de este usuario todavía
+
+      const msgs = buildMessages(userData);
+      msgs.forEach(m => allMessages.push(m));
+      if (msgs.length > 0) {
+        resultados.push({
+          persona: config.persona || '?',
+          alertas: msgs.length
+        });
+      }
+    });
+
+    // Mandar todas las notificaciones
+    let enviados = 0;
+    for (const msg of allMessages) {
+      try {
+        await messaging.send(msg);
+        enviados++;
+      } catch(e) {
+        console.error('Error enviando a token:', e.message);
+      }
+    }
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        ok: true,
+        horaLocal,
+        revisados: Object.keys(tokensData).length,
+        enviados,
+        resultados
+      })
+    };
+
+  } catch(err) {
+    console.error('send-alerts error:', err);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: err.message })
+    };
+  }
+};

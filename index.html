@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cuidado Diario">
+<meta name="theme-color" content="#2D6A4F">
+<title>Cuidado Diario</title>
+<style>
+  :root {
+    --verde: #2D6A4F;
+    --verde-claro: #52B788;
+    --verde-suave: #D8F3DC;
+    --verde-medio: #B7E4C7;
+    --naranja: #E76F51;
+    --naranja-suave: #FDDCB5;
+    --amarillo: #F4A261;
+    --crema: #FEFAE0;
+    --crema-oscuro: #F2ECD4;
+    --texto: #1B2E1E;
+    --texto-suave: #4A6650;
+    --borde: #C7DBC9;
+    --blanco: #FFFFFF;
+    --rojo: #C1440E;
+    --rojo-suave: #FFE5DA;
+    --gris: #8A9E8D;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--crema); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--texto); overflow-x: hidden; }
+
+  /* HEADER */
+  .header {
+    background: var(--verde);
+    color: white;
+    padding: 16px 20px 14px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: center; }
+  .header-saludo { font-size: 11px; opacity: 0.8; letter-spacing: 0.5px; text-transform: uppercase; }
+  .header-fecha { font-size: 13px; font-weight: 600; margin-top: 2px; }
+  .header-nombre { font-size: 18px; font-weight: 700; margin-top: 1px; }
+  .notif-btn { background: rgba(255,255,255,0.15); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 18px; position: relative; }
+  .notif-badge { position: absolute; top: 4px; right: 4px; background: var(--naranja); width: 8px; height: 8px; border-radius: 50%; }
+
+  /* NAV TABS */
+  .nav-tabs { display: flex; background: var(--blanco); border-bottom: 1px solid var(--borde); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 1; min-width: 70px; padding: 12px 8px 10px; text-align: center; font-size: 11px; font-weight: 600; color: var(--gris); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .tab.active { color: var(--verde); border-bottom-color: var(--verde); }
+  .tab svg { display: block; margin: 0 auto 3px; }
+
+  /* CONTENT PAGES */
+  .page { display: none; padding: 16px; min-height: calc(100vh - 130px); }
+  .page.active { display: block; }
+
+  /* ALERTAS */
+  .alerta-card {
+    background: var(--rojo-suave);
+    border: 1px solid #F5C6B5;
+    border-left: 4px solid var(--rojo);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .alerta-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .alerta-titulo { font-size: 13px; font-weight: 700; color: var(--rojo); }
+  .alerta-desc { font-size: 12px; color: #8B3520; margin-top: 2px; }
+  .alerta-dias { font-size: 11px; color: var(--gris); margin-top: 3px; }
+
+  /* SECTION TITLES */
+  .section-title { font-size: 11px; font-weight: 700; color: var(--gris); text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px; }
+  .section-title:first-child { margin-top: 0; }
+
+  /* ITEM CARDS */
+  .item-card {
+    background: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 13px 14px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .item-emoji { font-size: 28px; flex-shrink: 0; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-nombre { font-size: 14px; font-weight: 600; color: var(--texto); }
+  .item-cat { font-size: 11px; color: var(--gris); margin-top: 1px; }
+  .item-barra-wrap { margin-top: 7px; }
+  .item-barra-bg { background: var(--crema-oscuro); border-radius: 4px; height: 6px; overflow: hidden; }
+  .item-barra-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+  .item-barra-label { font-size: 10px; color: var(--gris); margin-top: 3px; }
+  .item-acciones { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+  .btn-icon { background: var(--verde-suave); border: none; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; }
+  .btn-icon.danger { background: var(--rojo-suave); }
+
+  /* PROGRESS COLORS */
+  .prog-ok { background: var(--verde-claro); }
+  .prog-warn { background: var(--amarillo); }
+  .prog-crit { background: var(--naranja); }
+  .prog-gone { background: var(--rojo); }
+
+  /* FAB */
+  .fab {
+    position: fixed; bottom: 24px; right: 20px; z-index: 200;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--verde); color: white; font-size: 26px;
+    border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(45,106,79,0.4);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s;
+  }
+  .fab:active { transform: scale(0.93); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.45);
+    display: none; align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--blanco); width: 100%; border-radius: 20px 20px 0 0;
+    padding: 0 0 env(safe-area-inset-bottom, 16px);
+    max-height: 92vh; overflow-y: auto;
+  }
+  .modal-handle { width: 36px; height: 4px; background: var(--borde); border-radius: 2px; margin: 12px auto 0; }
+  .modal-title { font-size: 16px; font-weight: 700; color: var(--texto); padding: 16px 20px 0; }
+  .modal-body { padding: 16px 20px 24px; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--texto-suave); margin-bottom: 5px; display: block; }
+  .form-input, .form-select {
+    width: 100%; border: 1.5px solid var(--borde); border-radius: 10px;
+    padding: 11px 13px; font-size: 15px; color: var(--texto);
+    background: var(--crema); outline: none;
+    -webkit-appearance: none;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--verde-claro); }
+  .emoji-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; margin-top: 6px; }
+  .emoji-btn { font-size: 24px; background: var(--crema-oscuro); border: 2px solid transparent; border-radius: 8px; padding: 6px; cursor: pointer; text-align: center; }
+  .emoji-btn.sel { border-color: var(--verde); background: var(--verde-suave); }
+  .btn-primary {
+    width: 100%; background: var(--verde); color: white;
+    border: none; border-radius: 12px; padding: 14px;
+    font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 6px;
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-cancel { width: 100%; background: none; color: var(--gris); border: 1.5px solid var(--borde); border-radius: 12px; padding: 12px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+
+  /* CONFIG PAGE */
+  .config-card { background: var(--blanco); border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+  .config-row { display: flex; align-items: center; padding: 14px 16px; gap: 12px; border-bottom: 1px solid var(--crema-oscuro); }
+  .config-row:last-child { border-bottom: none; }
+  .config-icon { font-size: 20px; width: 32px; text-align: center; }
+  .config-text { flex: 1; }
+  .config-label { font-size: 14px; font-weight: 600; color: var(--texto); }
+  .config-desc { font-size: 11px; color: var(--gris); margin-top: 1px; }
+  .config-input { border: 1.5px solid var(--borde); border-radius: 8px; padding: 7px 10px; font-size: 14px; color: var(--texto); background: var(--crema); width: 130px; text-align: right; }
+  .toggle { width: 44px; height: 26px; border-radius: 13px; background: var(--borde); position: relative; cursor: pointer; border: none; transition: background 0.2s; flex-shrink: 0; }
+  .toggle.on { background: var(--verde-claro); }
+  .toggle::after { content:''; position: absolute; width: 20px; height: 20px; background: white; border-radius: 50%; top: 3px; left: 3px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .toggle.on::after { transform: translateX(18px); }
+
+  /* RESUMEN PAGE */
+  .mes-selector { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .mes-btn { background: var(--verde-suave); border: none; border-radius: 8px; padding: 8px 12px; font-size: 14px; cursor: pointer; color: var(--verde); font-weight: 600; }
+  .mes-label { flex: 1; text-align: center; font-size: 15px; font-weight: 700; color: var(--texto); }
+  .resumen-total { background: var(--verde); color: white; border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 16px; }
+  .resumen-total-label { font-size: 12px; opacity: 0.8; }
+  .resumen-total-monto { font-size: 32px; font-weight: 700; margin-top: 2px; }
+  .resumen-cat { background: var(--blanco); border: 1px solid var(--borde); border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
+  .resumen-cat-header { display: flex; justify-content: space-between; align-items: center; }
+  .resumen-cat-nombre { font-size: 14px; font-weight: 600; color: var(--texto); }
+  .resumen-cat-monto { font-size: 15px; font-weight: 700; color: var(--verde); }
+  .resumen-cat-items { margin-top: 8px; border-top: 1px solid var(--crema-oscuro); padding-top: 8px; }
+  .resumen-item-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; color: var(--texto-suave); }
+  .resumen-porcentaje { font-size: 11px; color: var(--gris); }
+
+  /* HISTORIAL PAGE */
+  .log-dia { margin-bottom: 14px; }
+  .log-dia-titulo { font-size: 12px; font-weight: 700; color: var(--gris); margin-bottom: 6px; }
+  .log-row { background: var(--blanco); border: 1px solid var(--borde); border-radius: 10px; padding: 10px 14px; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
+  .log-emoji { font-size: 20px; }
+  .log-info { flex: 1; }
+  .log-nombre { font-size: 13px; font-weight: 600; }
+  .log-detalles { font-size: 11px; color: var(--gris); margin-top: 1px; }
+  .log-precio { font-size: 13px; font-weight: 600; color: var(--verde); }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 48px 20px; }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-title { font-size: 16px; font-weight: 600; color: var(--texto); }
+  .empty-desc { font-size: 13px; color: var(--gris); margin-top: 6px; }
+
+  /* CHIPS */
+  .chip { display: inline-block; background: var(--verde-suave); color: var(--verde); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+  .chip.warn { background: var(--naranja-suave); color: #B05020; }
+
+  /* INSTALL BANNER */
+  .install-banner { background: var(--verde-suave); border: 1px solid var(--verde-medio); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .install-banner-text { flex: 1; font-size: 12px; color: var(--verde); }
+  .install-banner-text b { font-size: 13px; display: block; margin-bottom: 2px; }
+  .install-btn-sm { background: var(--verde); color: white; border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+
+  /* NOTIF CONFIG */
+  .notif-hora { display: flex; align-items: center; gap: 8px; }
+
+  /* MULTI-CATEGORIA CHIPS */
+  .cat-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; }
+  .cat-chip { display: inline-flex; align-items: center; gap: 4px; padding: 7px 12px; border-radius: 20px; border: 1.5px solid var(--borde); background: var(--crema); font-size: 13px; cursor: pointer; transition: all 0.15s; color: var(--texto-suave); user-select: none; }
+  .cat-chip.sel { background: var(--verde-suave); border-color: var(--verde); color: var(--verde); font-weight: 600; }
+  .cat-chip-multi { display: flex; flex-wrap: wrap; gap: 4px; }
+  .cat-tag { display: inline-block; background: var(--verde-suave); color: var(--verde); font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
+
+  /* RACIONES */
+  .raciones-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
+  .modo-btn { flex: 1; padding: 9px; border-radius: 10px; border: 1.5px solid var(--borde); background: var(--crema); font-size: 13px; font-weight: 600; cursor: pointer; color: var(--gris); text-align: center; transition: all 0.15s; }
+  .modo-btn.activo { background: var(--verde-suave); border-color: var(--verde); color: var(--verde); }
+  .raciones-calc { background: var(--verde-suave); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--verde); font-weight: 600; margin-top: 8px; text-align: center; display:none; }
+
+  /* GASTOS PERSONALES */
+  .gasto-fijo-card { background: var(--blanco); border: 1px solid var(--borde); border-radius: 12px; padding: 13px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+  .gasto-fijo-icon { font-size: 24px; flex-shrink: 0; }
+  .gasto-fijo-info { flex: 1; min-width: 0; }
+  .gasto-fijo-nombre { font-size: 14px; font-weight: 600; color: var(--texto); }
+  .gasto-fijo-desc { font-size: 11px; color: var(--gris); margin-top: 2px; }
+  .gasto-fijo-monto { font-size: 15px; font-weight: 700; color: var(--naranja); flex-shrink: 0; margin-right: 6px; }
+
+  /* INGRESO VS GASTO */
+  .balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .balance-card { border-radius: 12px; padding: 14px; text-align: center; }
+  .balance-card.ingreso { background: #1B4332; color: white; }
+  .balance-card.egreso { background: #7B2D00; color: white; }
+  .balance-full { grid-column: 1/-1; border-radius: 12px; padding: 14px; text-align: center; color: white; }
+  .balance-label { font-size: 10px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px; }
+  .balance-monto { font-size: 22px; font-weight: 700; margin-top: 3px; }
+  .balance-sub { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+  .resumen-seccion { font-size: 11px; font-weight: 700; color: var(--gris); text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--borde); }
+
+  /* FAB GASTOS */
+  .fab-gastos { position: fixed; bottom: 24px; right: 20px; z-index: 200; width: 56px; height: 56px; border-radius: 50%; background: var(--naranja); color: white; font-size: 26px; border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(231,111,81,0.4); display: none; align-items: center; justify-content: center; transition: transform 0.15s; }
+  .fab-gastos:active { transform: scale(0.93); }
+
+  @media (prefers-color-scheme: dark) {
+    :root { --crema: #1A2420; --crema-oscuro: #223028; --blanco: #1E2E26; --borde: #2E4838; --texto: #E8F2EA; --texto-suave: #9DC9A5; --gris: #6E9475; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-saludo">🌿 Panel de cuidado</div>
+      <div class="header-nombre" id="hdr-nombre">Hola, Cuidador/a</div>
+      <div class="header-fecha" id="hdr-fecha">Cargando fecha...</div>
+    </div>
+    <button class="notif-btn" onclick="checkAlertas(true)" title="Ver alertas">
+      🔔
+      <div class="notif-badge" id="notif-badge" style="display:none"></div>
+    </button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="nav-tabs">
+  <div class="tab active" onclick="showPage('inicio')" id="tab-inicio">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Inicio
+  </div>
+  <div class="tab" onclick="showPage('stock')" id="tab-stock">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+    Stock
+  </div>
+  <div class="tab" onclick="showPage('resumen')" id="tab-resumen">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+    Gastos
+  </div>
+  <div class="tab" onclick="showPage('fijos')" id="tab-fijos">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+    Personal
+  </div>
+  <div class="tab" onclick="showPage('historial')" id="tab-historial">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Historial
+  </div>
+  <div class="tab" onclick="showPage('config')" id="tab-config">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Config
+  </div>
+</div>
+
+<!-- PAGES -->
+
+<!-- INICIO -->
+<div class="page active" id="page-inicio">
+  <div id="install-banner-wrap"></div>
+  <div id="alertas-container"></div>
+  <div class="section-title">Recursos activos</div>
+  <div id="inicio-items"></div>
+</div>
+
+<!-- STOCK -->
+<div class="page" id="page-stock">
+  <div id="stock-items"></div>
+</div>
+
+<!-- RESUMEN -->
+<div class="page" id="page-resumen">
+  <div class="mes-selector">
+    <button class="mes-btn" onclick="cambiarMes(-1)">◀</button>
+    <div class="mes-label" id="mes-label">—</div>
+    <button class="mes-btn" onclick="cambiarMes(1)">▶</button>
+  </div>
+  <div id="resumen-contenido"></div>
+</div>
+
+<!-- HISTORIAL -->
+<div class="page" id="page-historial">
+  <div id="historial-contenido"></div>
+</div>
+
+<!-- GASTOS PERSONALES -->
+<div class="page" id="page-fijos">
+  <div style="background:var(--verde-suave); border:1px solid var(--verde-medio); border-radius:12px; padding:13px 14px; margin-bottom:16px; font-size:13px; color:var(--texto-suave); line-height:1.5">
+    <b style="color:var(--verde); display:block; margin-bottom:4px">💳 Gastos Personales</b>
+    Acá podés agregar los gastos mensuales fijos de la persona cuidada, como obra social, seguros, servicios, o cualquier pago que se repita todos los meses. Se suman automáticamente al total de gastos del mes.
+  </div>
+
+  <div class="section-title">Ingresos mensuales</div>
+  <div id="ingresos-lista"></div>
+
+  <div class="section-title" style="margin-top:20px">Gastos fijos mensuales</div>
+  <div id="fijos-lista"></div>
+</div>
+
+<!-- FAB gastos fijos -->
+<button class="fab-gastos" id="fab-gastos-btn" onclick="abrirModalGasto()" title="Agregar gasto/ingreso">+</button>
+
+<!-- CONFIG -->
+<div class="page" id="page-config">
+  <div class="section-title">Tu perfil</div>
+  <div class="config-card">
+    <div class="config-row">
+      <div class="config-icon">👤</div>
+      <div class="config-text">
+        <div class="config-label">Nombre del cuidador/a</div>
+        <div class="config-desc">Aparece en el saludo de la app</div>
+      </div>
+      <input class="config-input" id="cfg-nombre" placeholder="Tu nombre" oninput="guardarConfig()">
+    </div>
+    <div class="config-row">
+      <div class="config-icon">🧓</div>
+      <div class="config-text">
+        <div class="config-label">Nombre de la persona</div>
+        <div class="config-desc">A quien cuidas</div>
+      </div>
+      <input class="config-input" id="cfg-persona" placeholder="Ej: Abuela Rosa" oninput="guardarConfig()">
+    </div>
+  </div>
+
+  <div class="section-title">Notificaciones</div>
+  <div class="config-card">
+    <div class="config-row">
+      <div class="config-icon">🔔</div>
+      <div class="config-text">
+        <div class="config-label">Activar alertas</div>
+        <div class="config-desc">Aviso cuando falta 1 día para agotarse</div>
+      </div>
+      <button class="toggle on" id="toggle-notif" onclick="toggleNotif()"></button>
+    </div>
+    <div class="config-row">
+      <div class="config-icon">⏰</div>
+      <div class="config-text">
+        <div class="config-label">Hora del aviso diario</div>
+        <div class="config-desc">La app revisará alertas a esta hora</div>
+      </div>
+      <input class="config-input" id="cfg-hora" type="time" value="09:00" oninput="guardarConfig()" style="width:100px">
+    </div>
+    <div class="config-row">
+      <div class="config-icon">📱</div>
+      <div class="config-text">
+        <div class="config-label">Pedir permiso de notificación</div>
+        <div class="config-desc">Necesario para alertas en segundo plano</div>
+      </div>
+      <button class="install-btn-sm" onclick="pedirPermisoNotif()">Activar</button>
+    </div>
+  </div>
+
+  <div class="section-title">Datos</div>
+  <div class="config-card">
+    <div class="config-row">
+      <div class="config-icon">🗑️</div>
+      <div class="config-text">
+        <div class="config-label">Limpiar todo</div>
+        <div class="config-desc">Eliminar todos los registros</div>
+      </div>
+      <button class="install-btn-sm" style="background:var(--rojo)" onclick="limpiarTodo()">Borrar</button>
+    </div>
+  </div>
+
+  <div style="padding: 16px 0; text-align:center">
+    <div style="font-size:12px; color:var(--gris)">Cuidado Diario v1.0 · Funciona sin internet</div>
+    <div style="font-size:11px; color:var(--gris); margin-top:4px">🔒 Todos los datos se guardan en tu celular</div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="abrirModal()" id="fab-btn" title="Agregar recurso">+</button>
+
+<!-- MODAL AGREGAR -->
+<div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">Nuevo recurso</div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Ícono</label>
+        <div class="emoji-grid" id="emoji-grid">
+          <!-- populated by JS -->
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nombre del producto</label>
+        <input class="form-input" id="inp-nombre" placeholder="Ej: Vino Di Candi, Cigarrillos Lucky...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categorías <span style="font-weight:400;color:var(--gris)">(podés elegir varias)</span></label>
+        <div class="cat-chips" id="cat-chips-container">
+          <div class="cat-chip" data-cat="Desayuno" onclick="toggleCat(this)">🌅 Desayuno</div>
+          <div class="cat-chip" data-cat="Almuerzo" onclick="toggleCat(this)">🍽️ Almuerzo</div>
+          <div class="cat-chip" data-cat="Merienda" onclick="toggleCat(this)">☕ Merienda</div>
+          <div class="cat-chip" data-cat="Cena" onclick="toggleCat(this)">🌙 Cena</div>
+          <div class="cat-chip" data-cat="Postre" onclick="toggleCat(this)">🍰 Postre</div>
+          <div class="cat-chip" data-cat="Bebida" onclick="toggleCat(this)">🍷 Bebida</div>
+          <div class="cat-chip" data-cat="Cigarrillos" onclick="toggleCat(this)">🚬 Cigarrillos</div>
+          <div class="cat-chip" data-cat="Medicamento" onclick="toggleCat(this)">💊 Medicamento</div>
+          <div class="cat-chip" data-cat="Higiene" onclick="toggleCat(this)">🧴 Higiene</div>
+          <div class="cat-chip" data-cat="Otro" onclick="toggleCat(this)">📦 Otro</div>
+        </div>
+        <div id="cat-error" style="font-size:12px;color:var(--rojo);margin-top:5px;display:none">Elegí al menos una categoría</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+        <div class="form-group">
+          <label class="form-label">Cantidad comprada</label>
+          <input class="form-input" id="inp-cantidad" type="number" min="1" placeholder="Ej: 1" value="1">
+        </div>
+        <div class="form-group" id="grupo-unidad">
+          <label class="form-label">Unidad</label>
+          <input class="form-input" id="inp-unidad" placeholder="Ej: unidad, litro..." value="unidad">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">¿Cómo calculás la duración?</label>
+        <div class="raciones-toggle">
+          <button class="modo-btn activo" id="modo-dias-btn" onclick="setModoRaciones('dias')">📅 Días manual</button>
+          <button class="modo-btn" id="modo-raciones-btn" onclick="setModoRaciones('raciones')">🔢 Por raciones</button>
+        </div>
+
+        <div id="bloque-dias">
+          <label class="form-label">Días que dura</label>
+          <input class="form-input" id="inp-dias" type="number" min="1" placeholder="Ej: 7" value="7">
+        </div>
+
+        <div id="bloque-raciones" style="display:none">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+            <div>
+              <label class="form-label">Total de raciones</label>
+              <input class="form-input" id="inp-raciones-total" type="number" min="1" placeholder="Ej: 40" oninput="calcularDiasRaciones()">
+            </div>
+            <div>
+              <label class="form-label">Raciones por día</label>
+              <input class="form-input" id="inp-raciones-dia" type="number" min="0.1" step="0.5" placeholder="Ej: 4" oninput="calcularDiasRaciones()">
+            </div>
+          </div>
+          <div class="raciones-calc" id="raciones-resultado">Ingresá los valores para calcular</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Precio (opcional)</label>
+        <input class="form-input" id="inp-precio" type="number" min="0" placeholder="$ 0" value="">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas (opcional)</label>
+        <input class="form-input" id="inp-notas" placeholder="Ej: Comprar en el chino de la esquina">
+      </div>
+      <input type="hidden" id="inp-edit-id">
+      <button class="btn-primary" onclick="guardarItem()">✅ Guardar recurso</button>
+      <button class="btn-cancel" onclick="cerrarModalBtn()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RECARGAR -->
+<div class="modal-overlay" id="recarga-overlay" onclick="cerrarRecargaModal(event)">
+  <div class="modal" id="recarga-modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Recargar recurso</div>
+    <div class="modal-body">
+      <div id="recarga-info" style="background:var(--crema-oscuro); border-radius:10px; padding:12px; margin-bottom:14px; font-size:14px; color:var(--texto-suave)"></div>
+      <div class="form-group">
+        <label class="form-label">¿Cuántas unidades compraste?</label>
+        <input class="form-input" id="recarga-cantidad" type="number" min="1" value="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">¿Cuántos días dura esta vez?</label>
+        <input class="form-input" id="recarga-dias" type="number" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Precio pagado (opcional)</label>
+        <input class="form-input" id="recarga-precio" type="number" min="0" placeholder="$">
+      </div>
+      <input type="hidden" id="recarga-id">
+      <button class="btn-primary" onclick="confirmarRecarga()">🔄 Confirmar recarga</button>
+      <button class="btn-cancel" onclick="cerrarRecargaModalBtn()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA LAYER
+// ============================================================
+const DB_KEY = 'cd_items';
+const LOG_KEY = 'cd_log';
+const CFG_KEY = 'cd_config';
+
+function getData() { try { return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); } catch(e) { return []; } }
+function setData(d) { localStorage.setItem(DB_KEY, JSON.stringify(d)); }
+function getLog() { try { return JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch(e) { return []; } }
+function setLog(d) { localStorage.setItem(LOG_KEY, JSON.stringify(d)); }
+function getConfig() { try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}'); } catch(e) { return {}; } }
+function setConfig(c) { localStorage.setItem(CFG_KEY, JSON.stringify(c)); }
+
+// ============================================================
+// CONFIG
+// ============================================================
+let cfg = getConfig();
+
+function guardarConfig() {
+  cfg.nombre = document.getElementById('cfg-nombre').value;
+  cfg.persona = document.getElementById('cfg-persona').value;
+  cfg.hora = document.getElementById('cfg-hora').value;
+  setConfig(cfg);
+  actualizarHeader();
+}
+
+function cargarConfig() {
+  cfg = getConfig();
+  if (cfg.nombre) document.getElementById('cfg-nombre').value = cfg.nombre;
+  if (cfg.persona) document.getElementById('cfg-persona').value = cfg.persona;
+  if (cfg.hora) document.getElementById('cfg-hora').value = cfg.hora || '09:00';
+  if (cfg.notifOff) {
+    document.getElementById('toggle-notif').classList.remove('on');
+  }
+  actualizarHeader();
+}
+
+function toggleNotif() {
+  const t = document.getElementById('toggle-notif');
+  t.classList.toggle('on');
+  cfg.notifOff = !t.classList.contains('on');
+  setConfig(cfg);
+}
+
+// ============================================================
+// HEADER DATE
+// ============================================================
+const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function actualizarHeader() {
+  const now = new Date();
+  const diaNombre = DIAS[now.getDay()];
+  const diaN = now.getDate();
+  const mes = MESES[now.getMonth()];
+  const anio = now.getFullYear();
+  const hora = now.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+
+  const nombre = cfg.nombre ? cfg.nombre.split(' ')[0] : 'cuidador/a';
+  const persona = cfg.persona ? ` · ${cfg.persona}` : '';
+
+  document.getElementById('hdr-nombre').textContent = `¡Hola, ${nombre}!${persona}`;
+  document.getElementById('hdr-fecha').textContent =
+    `Hoy es ${diaNombre} ${diaN} de ${mes} de ${anio} · ${hora}`;
+}
+
+// ============================================================
+// PAGE NAVIGATION
+// ============================================================
+let paginaActual = 'inicio';
+let mesSel = new Date().getMonth();
+let anioSel = new Date().getFullYear();
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  paginaActual = id;
+
+  // hide/show FABs
+  document.getElementById('fab-btn').style.display = (id === 'inicio' || id === 'stock') ? 'flex' : 'none';
+  document.getElementById('fab-gastos-btn').style.display = (id === 'fijos') ? 'flex' : 'none';
+
+  if (id === 'inicio') renderInicio();
+  if (id === 'stock') renderStock();
+  if (id === 'resumen') renderResumen();
+  if (id === 'historial') renderHistorial();
+  if (id === 'fijos') renderFijos();
+}
+
+// ============================================================
+// MULTI-CATEGORIA
+// ============================================================
+function toggleCat(el) {
+  el.classList.toggle('sel');
+}
+
+function getCatsSeleccionadas() {
+  return [...document.querySelectorAll('#cat-chips-container .cat-chip.sel')]
+    .map(el => el.dataset.cat);
+}
+
+function setCatsSeleccionadas(cats) {
+  document.querySelectorAll('#cat-chips-container .cat-chip').forEach(el => {
+    el.classList.toggle('sel', cats.includes(el.dataset.cat));
+  });
+}
+
+function resetCats() {
+  document.querySelectorAll('#cat-chips-container .cat-chip').forEach(el => el.classList.remove('sel'));
+  document.getElementById('cat-error').style.display = 'none';
+}
+
+// helper: display array of cats as chips
+function renderCatTags(cats) {
+  if (!Array.isArray(cats)) cats = [cats];
+  return `<div class="cat-chip-multi">${cats.map(c => `<span class="cat-tag">${c}</span>`).join('')}</div>`;
+}
+
+// for log grouping: use first category
+function primaryCat(item) {
+  return Array.isArray(item.categorias) ? item.categorias[0] : (item.categoria || 'Otro');
+}
+
+// ============================================================
+// RACIONES
+// ============================================================
+let modoRaciones = 'dias';
+
+function setModoRaciones(modo) {
+  modoRaciones = modo;
+  document.getElementById('modo-dias-btn').classList.toggle('activo', modo === 'dias');
+  document.getElementById('modo-raciones-btn').classList.toggle('activo', modo === 'raciones');
+  document.getElementById('bloque-dias').style.display = modo === 'dias' ? 'block' : 'none';
+  document.getElementById('bloque-raciones').style.display = modo === 'raciones' ? 'block' : 'none';
+}
+
+function calcularDiasRaciones() {
+  const total = parseFloat(document.getElementById('inp-raciones-total').value) || 0;
+  const porDia = parseFloat(document.getElementById('inp-raciones-dia').value) || 0;
+  const res = document.getElementById('raciones-resultado');
+  if (total > 0 && porDia > 0) {
+    const dias = Math.floor(total / porDia);
+    res.style.display = 'block';
+    res.textContent = `✅ ${total} raciones ÷ ${porDia}/día = ${dias} días de duración`;
+  } else {
+    res.style.display = 'none';
+  }
+}
+
+function getDiasDelModal() {
+  if (modoRaciones === 'raciones') {
+    const total = parseFloat(document.getElementById('inp-raciones-total').value) || 0;
+    const porDia = parseFloat(document.getElementById('inp-raciones-dia').value) || 1;
+    return porDia > 0 ? Math.max(1, Math.floor(total / porDia)) : 1;
+  }
+  return parseInt(document.getElementById('inp-dias').value) || 7;
+}
+
+
+const EMOJIS = ['🍽️','☕','🌙','🍷','🚬','💊','🧴','🥗','🍞','🥛','🧃','🍎','🥩','🫙','🧆','🧂','📦','🧻','🪥','💉','🏥','🧪','🐟','🥦','🍰'];
+let emojiSel = '📦';
+
+function renderEmojiGrid() {
+  const g = document.getElementById('emoji-grid');
+  g.innerHTML = EMOJIS.map(e =>
+    `<button class="emoji-btn ${e === emojiSel ? 'sel' : ''}" onclick="selEmoji('${e}')">${e}</button>`
+  ).join('');
+}
+
+function selEmoji(e) {
+  emojiSel = e;
+  renderEmojiGrid();
+}
+
+// ============================================================
+// MODAL AGREGAR/EDITAR
+// ============================================================
+function abrirModal(id) {
+  renderEmojiGrid();
+  const overlay = document.getElementById('modal-overlay');
+  overlay.classList.add('open');
+
+  if (id) {
+    const items = getData();
+    const item = items.find(x => x.id === id);
+    if (!item) return;
+    document.getElementById('modal-title').textContent = 'Editar recurso';
+    document.getElementById('inp-nombre').value = item.nombre;
+    // multi-cat support: item.categorias is array, item.categoria is legacy string
+    const cats = Array.isArray(item.categorias) ? item.categorias : [item.categoria || 'Otro'];
+    setCatsSeleccionadas(cats);
+    document.getElementById('inp-cantidad').value = item.cantidad;
+    document.getElementById('inp-dias').value = item.diasDuracion;
+    document.getElementById('inp-precio').value = item.precio || '';
+    document.getElementById('inp-unidad').value = item.unidad || 'unidad';
+    document.getElementById('inp-notas').value = item.notas || '';
+    document.getElementById('inp-edit-id').value = id;
+    emojiSel = item.emoji || '📦';
+    renderEmojiGrid();
+  } else {
+    document.getElementById('modal-title').textContent = 'Nuevo recurso';
+    document.getElementById('inp-nombre').value = '';
+    resetCats();
+    document.getElementById('inp-cantidad').value = '1';
+    document.getElementById('inp-dias').value = '7';
+    document.getElementById('inp-precio').value = '';
+    document.getElementById('inp-unidad').value = 'unidad';
+    document.getElementById('inp-notas').value = '';
+    document.getElementById('inp-edit-id').value = '';
+    emojiSel = '📦';
+    renderEmojiGrid();
+    setModoRaciones('dias');
+  }
+}
+
+function cerrarModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) cerrarModalBtn();
+}
+function cerrarModalBtn() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function guardarItem() {
+  const nombre = document.getElementById('inp-nombre').value.trim();
+  if (!nombre) { alert('Ingresá un nombre'); return; }
+
+  const cats = getCatsSeleccionadas();
+  if (cats.length === 0) {
+    document.getElementById('cat-error').style.display = 'block';
+    return;
+  }
+  document.getElementById('cat-error').style.display = 'none';
+
+  const dias = getDiasDelModal();
+  const cantidad = parseInt(document.getElementById('inp-cantidad').value) || 1;
+  const precio = parseFloat(document.getElementById('inp-precio').value) || 0;
+  const editId = document.getElementById('inp-edit-id').value;
+
+  let items = getData();
+
+  if (editId) {
+    // EDITAR: update item + fix price in existing log entries for this item
+    const idx = items.findIndex(x => x.id === editId);
+    if (idx > -1) {
+      const precioAnterior = items[idx].precio;
+      items[idx].nombre = nombre;
+      items[idx].categorias = cats;
+      items[idx].categoria = cats[0]; // backwards compat
+      items[idx].emoji = emojiSel;
+      items[idx].diasDuracion = dias;
+      items[idx].precio = precio;
+      items[idx].unidad = document.getElementById('inp-unidad').value.trim();
+      items[idx].notas = document.getElementById('inp-notas').value.trim();
+
+      // If price changed, update the most recent log entry for this item
+      if (precio !== precioAnterior) {
+        let log = getLog();
+        const logIdx = log.findIndex(e => e.itemId === editId);
+        if (logIdx > -1) {
+          log[logIdx].precio = precio;
+          log[logIdx].nombre = nombre;
+          log[logIdx].categorias = cats;
+          log[logIdx].categoria = cats[0];
+          log[logIdx].emoji = emojiSel;
+          setLog(log);
+        }
+      }
+    }
+  } else {
+    const now = Date.now();
+    const item = {
+      id: 'item_' + now + '_' + Math.random().toString(36).slice(2,6),
+      nombre,
+      categorias: cats,
+      categoria: cats[0], // primary, backwards compat
+      emoji: emojiSel,
+      cantidad,
+      diasDuracion: dias,
+      precio,
+      unidad: document.getElementById('inp-unidad').value.trim() || 'unidad',
+      notas: document.getElementById('inp-notas').value.trim(),
+      creadoEn: now,
+      recargadoEn: now,
+      alertaEnviada: false
+    };
+    items.push(item);
+    agregarLog({
+      tipo: 'compra',
+      itemId: item.id,
+      nombre: item.nombre,
+      emoji: item.emoji,
+      categorias: item.categorias,
+      categoria: item.categoria,
+      cantidad: item.cantidad,
+      diasDuracion: item.diasDuracion,
+      precio: item.precio,
+      unidad: item.unidad,
+      fecha: now
+    });
+  }
+
+  setData(items);
+  cerrarModalBtn();
+  if (paginaActual === 'inicio') renderInicio();
+  if (paginaActual === 'stock') renderStock();
+  checkAlertas();
+}
+
+// ============================================================
+// MODAL RECARGAR
+// ============================================================
+function abrirRecargaModal(id) {
+  const items = getData();
+  const item = items.find(x => x.id === id);
+  if (!item) return;
+  document.getElementById('recarga-id').value = id;
+  document.getElementById('recarga-cantidad').value = item.cantidad;
+  document.getElementById('recarga-dias').value = item.diasDuracion;
+  document.getElementById('recarga-precio').value = item.precio || '';
+  document.getElementById('recarga-info').innerHTML =
+    `<b>${item.emoji} ${item.nombre}</b><br>Última recarga: ${formatFecha(item.recargadoEn)}`;
+  document.getElementById('recarga-overlay').classList.add('open');
+}
+function cerrarRecargaModal(e) {
+  if (e.target === document.getElementById('recarga-overlay')) cerrarRecargaModalBtn();
+}
+function cerrarRecargaModalBtn() {
+  document.getElementById('recarga-overlay').classList.remove('open');
+}
+function confirmarRecarga() {
+  const id = document.getElementById('recarga-id').value;
+  const cantidad = parseInt(document.getElementById('recarga-cantidad').value) || 1;
+  const dias = parseInt(document.getElementById('recarga-dias').value) || 7;
+  const precio = parseFloat(document.getElementById('recarga-precio').value) || 0;
+
+  let items = getData();
+  const idx = items.findIndex(x => x.id === id);
+  if (idx === -1) return;
+
+  items[idx].cantidad = cantidad;
+  items[idx].diasDuracion = dias;
+  items[idx].precio = precio;
+  items[idx].recargadoEn = Date.now();
+  items[idx].alertaEnviada = false;
+  setData(items);
+
+  agregarLog({
+    tipo: 'recarga',
+    itemId: items[idx].id,
+    nombre: items[idx].nombre,
+    emoji: items[idx].emoji,
+    categorias: items[idx].categorias || [items[idx].categoria || 'Otro'],
+    categoria: items[idx].categoria,
+    cantidad,
+    diasDuracion: dias,
+    precio,
+    fecha: Date.now()
+  });
+
+  cerrarRecargaModalBtn();
+  if (paginaActual === 'inicio') renderInicio();
+  if (paginaActual === 'stock') renderStock();
+  checkAlertas();
+}
+
+// ============================================================
+// LOG
+// ============================================================
+function agregarLog(entry) {
+  const log = getLog();
+  log.unshift(entry);
+  setLog(log);
+}
+
+// ============================================================
+// CALCULATIONS
+// ============================================================
+function calcularEstado(item) {
+  const ahora = Date.now();
+  const transcurrido = (ahora - item.recargadoEn) / (1000 * 60 * 60 * 24);
+  const diasRestantes = Math.max(0, item.diasDuracion - transcurrido);
+  const porcentaje = Math.max(0, Math.min(100, (diasRestantes / item.diasDuracion) * 100));
+  const diaAgota = new Date(item.recargadoEn + item.diasDuracion * 24 * 60 * 60 * 1000);
+
+  return { diasRestantes, porcentaje, diaAgota, transcurrido };
+}
+
+function colorBarra(pct) {
+  if (pct > 50) return 'prog-ok';
+  if (pct > 25) return 'prog-warn';
+  if (pct > 10) return 'prog-crit';
+  return 'prog-gone';
+}
+
+// ============================================================
+// ALERTAS / NOTIFICACIONES
+// ============================================================
+function checkAlertas(mostrarModal) {
+  const items = getData();
+  const alertas = [];
+
+  items.forEach(item => {
+    const { diasRestantes } = calcularEstado(item);
+    if (diasRestantes <= 1 && diasRestantes > 0) {
+      alertas.push({ ...item, diasRestantes, tipo: 'urgente' });
+    } else if (diasRestantes <= 0) {
+      alertas.push({ ...item, diasRestantes: 0, tipo: 'agotado' });
+    } else if (diasRestantes <= 2) {
+      alertas.push({ ...item, diasRestantes, tipo: 'pronto' });
+    }
+  });
+
+  // badge
+  const badge = document.getElementById('notif-badge');
+  badge.style.display = alertas.length > 0 ? 'block' : 'none';
+
+  // render on inicio
+  const cont = document.getElementById('alertas-container');
+  if (!cont) return;
+  if (alertas.length === 0) { cont.innerHTML = ''; return; }
+
+  let html = `<div class="section-title">⚠️ Alertas (${alertas.length})</div>`;
+  alertas.forEach(a => {
+    const isAgotado = a.tipo === 'agotado';
+    const diasText = isAgotado
+      ? '¡Se agotó hoy!'
+      : a.diasRestantes < 1
+        ? 'Menos de 1 día restante'
+        : `Queda ${a.diasRestantes.toFixed(1)} día${a.diasRestantes !== 1 ? 's' : ''}`;
+
+    html += `<div class="alerta-card">
+      <div class="alerta-icon">${isAgotado ? '🔴' : '🟡'}</div>
+      <div>
+        <div class="alerta-titulo">${a.emoji} ${a.nombre}</div>
+        <div class="alerta-desc">${isAgotado ? '¡Se agotó! Necesitás recargar.' : 'Se va a agotar pronto — acordate de comprar.'}</div>
+        <div class="alerta-dias">${diasText} · ${Array.isArray(a.categorias) ? a.categorias.join(', ') : a.categoria}</div>
+      </div>
+    </div>`;
+  });
+  cont.innerHTML = html;
+
+  // push notification si tiene permiso
+  if (!cfg.notifOff && 'Notification' in window && Notification.permission === 'granted') {
+    const cuidador = cfg.nombre ? cfg.nombre.split(' ')[0] : 'Cuidador/a';
+    const persona = cfg.persona || 'la persona cuidada';
+    alertas.forEach(a => {
+      const key = `notif_${a.id}_${new Date().toDateString()}`;
+      if (!localStorage.getItem(key)) {
+        const msg = a.tipo === 'agotado'
+          ? `Hola ${cuidador}, a ${persona} se le agotó ${a.nombre}. ¡Necesitás comprarlo hoy!`
+          : `Hola ${cuidador}, a ${persona} le queda 1 día de ${a.nombre}. Acordate de comprarlo.`;
+        try {
+          new Notification('🌿 Cuidado Diario', {
+            body: msg,
+            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌿</text></svg>',
+            badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌿</text></svg>',
+            tag: a.id
+          });
+          localStorage.setItem(key, '1');
+        } catch(e) { /* notif no disponible */ }
+      }
+    });
+  }
+}
+
+async function pedirPermisoNotif() {
+  if (!('Notification' in window)) {
+    alert('Tu navegador no soporta notificaciones. Guardá la app en la pantalla de inicio e intentá de nuevo.');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    alert('✅ ¡Notificaciones activadas! Vas a recibir alertas cuando un recurso esté por agotarse.');
+    checkAlertas();
+  } else {
+    alert('No se pudieron activar las notificaciones. Activalas manualmente desde Configuración > Safari/Chrome > Notificaciones.');
+  }
+}
+
+// ============================================================
+// RENDER INICIO
+// ============================================================
+function renderInicio() {
+  checkAlertas();
+  const items = getData();
+  const cont = document.getElementById('inicio-items');
+
+  if (items.length === 0) {
+    cont.innerHTML = `<div class="empty">
+      <div class="empty-icon">🌿</div>
+      <div class="empty-title">Sin recursos registrados</div>
+      <div class="empty-desc">Tocá el botón <b>+</b> para agregar el primer producto.</div>
+    </div>`;
+    return;
+  }
+
+  // Sort by urgency
+  const sorted = [...items].sort((a, b) => {
+    const ea = calcularEstado(a);
+    const eb = calcularEstado(b);
+    return ea.diasRestantes - eb.diasRestantes;
+  });
+
+  cont.innerHTML = sorted.map(item => {
+    const { diasRestantes, porcentaje, diaAgota } = calcularEstado(item);
+    const colorCls = colorBarra(porcentaje);
+    const diasLabel = diasRestantes <= 0
+      ? '⚠️ Agotado'
+      : diasRestantes < 1
+        ? `Menos de 1 día`
+        : `${diasRestantes.toFixed(1)} días restantes`;
+    const agotaLabel = diasRestantes > 0
+      ? `Se agota: ${formatFecha(diaAgota.getTime())}`
+      : `Agotado el ${formatFecha(diaAgota.getTime())}`;
+
+    return `<div class="item-card">
+      <div class="item-emoji">${item.emoji}</div>
+      <div class="item-info">
+        <div class="item-nombre">${item.nombre}</div>
+        <div class="item-cat">${renderCatTags(item.categorias || item.categoria)}</div>
+        <div class="item-barra-wrap">
+          <div class="item-barra-bg">
+            <div class="item-barra-fill ${colorCls}" style="width:${porcentaje.toFixed(1)}%"></div>
+          </div>
+          <div class="item-barra-label">${diasLabel} · ${agotaLabel}</div>
+        </div>
+      </div>
+      <div class="item-acciones">
+        <button class="btn-icon" onclick="abrirRecargaModal('${item.id}')" title="Recargar">🔄</button>
+        <button class="btn-icon danger" onclick="eliminarItem('${item.id}')" title="Eliminar">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Install banner
+  renderInstallBanner();
+}
+
+// ============================================================
+// RENDER STOCK
+// ============================================================
+function renderStock() {
+  const items = getData();
+  const cont = document.getElementById('stock-items');
+
+  if (items.length === 0) {
+    cont.innerHTML = `<div class="empty">
+      <div class="empty-icon">📦</div>
+      <div class="empty-title">Stock vacío</div>
+      <div class="empty-desc">Agregá productos con el botón +</div>
+    </div>`;
+    return;
+  }
+
+  // Group by primary category
+  const cats = {};
+  items.forEach(item => {
+    const cats_arr = Array.isArray(item.categorias) ? item.categorias : [item.categoria || 'Otro'];
+    // group under first (primary) category
+    const primary = cats_arr[0];
+    if (!cats[primary]) cats[primary] = [];
+    cats[primary].push(item);
+  });
+
+  let html = '';
+  Object.keys(cats).sort().forEach(cat => {
+    html += `<div class="section-title">${cat}</div>`;
+    cats[cat].forEach(item => {
+      const { diasRestantes, porcentaje, diaAgota } = calcularEstado(item);
+      const colorCls = colorBarra(porcentaje);
+      const agotaLabel = diasRestantes <= 0
+        ? '⚠️ Agotado'
+        : `Agota: ${formatFechaCorta(diaAgota.getTime())}`;
+      const allCats = Array.isArray(item.categorias) ? item.categorias : [item.categoria || 'Otro'];
+
+      html += `<div class="item-card">
+        <div class="item-emoji">${item.emoji}</div>
+        <div class="item-info">
+          <div class="item-nombre">${item.nombre}</div>
+          <div class="item-cat" style="margin-top:3px">${renderCatTags(allCats)} <span style="font-size:11px;color:var(--gris)">${agotaLabel}${item.precio ? ` · $${item.precio.toLocaleString('es-AR')}` : ''}</span></div>
+          <div class="item-barra-wrap">
+            <div class="item-barra-bg">
+              <div class="item-barra-fill ${colorCls}" style="width:${porcentaje.toFixed(1)}%"></div>
+            </div>
+            <div class="item-barra-label">${diasRestantes <= 0 ? '0 días' : diasRestantes.toFixed(1)+' días'} de ${item.diasDuracion} · ${item.unidad || 'unidad'}</div>
+          </div>
+        </div>
+        <div class="item-acciones">
+          <button class="btn-icon" onclick="abrirModal('${item.id}')" title="Editar">✏️</button>
+          <button class="btn-icon" onclick="abrirRecargaModal('${item.id}')" title="Recargar">🔄</button>
+          <button class="btn-icon danger" onclick="eliminarItem('${item.id}')" title="Eliminar">🗑️</button>
+        </div>
+      </div>`;
+    });
+  });
+
+  cont.innerHTML = html;
+}
+
+// ============================================================
+// RENDER RESUMEN
+// ============================================================
+function renderResumen() {
+  document.getElementById('mes-label').textContent =
+    `${MESES[mesSel].charAt(0).toUpperCase() + MESES[mesSel].slice(1)} ${anioSel}`;
+
+  const log = getLog();
+  const fijos = getFijos();
+  const registros = log.filter(entry => {
+    const d = new Date(entry.fecha);
+    return d.getMonth() === mesSel && d.getFullYear() === anioSel;
+  });
+
+  const cont = document.getElementById('resumen-contenido');
+
+  // Gastos fijos y variables del mes
+  const totalFijosGastos = fijos.filter(f => f.tipo !== 'ingreso').reduce((s, f) => s + (f.monto || 0), 0);
+  const totalFijosIngresos = fijos.filter(f => f.tipo === 'ingreso').reduce((s, f) => s + (f.monto || 0), 0);
+  const totalVariables = registros.reduce((s, r) => s + (r.precio || 0), 0);
+  const totalGastos = totalFijosGastos + totalVariables;
+  const balance = totalFijosIngresos - totalGastos;
+  const superavit = balance >= 0;
+
+  // Balance header
+  let html = `
+    <div class="balance-grid">
+      <div class="balance-card ingreso">
+        <div class="balance-label">💰 Ingresos</div>
+        <div class="balance-monto">$${totalFijosIngresos.toLocaleString('es-AR',{maximumFractionDigits:0})}</div>
+        <div class="balance-sub">mensuales fijos</div>
+      </div>
+      <div class="balance-card egreso">
+        <div class="balance-label">💸 Gastos totales</div>
+        <div class="balance-monto">$${totalGastos.toLocaleString('es-AR',{maximumFractionDigits:0})}</div>
+        <div class="balance-sub">fijos + variables</div>
+      </div>
+      <div class="balance-full" style="background:${superavit ? 'var(--verde)' : 'var(--rojo)'}">
+        <div class="balance-label">${superavit ? '✅ Saldo a favor' : '⚠️ Déficit del mes'}</div>
+        <div class="balance-monto">${superavit ? '+' : ''}$${balance.toLocaleString('es-AR',{maximumFractionDigits:0})}</div>
+        <div class="balance-sub">${superavit ? 'La familia no pone plata de más' : 'La familia cubre este monto'}</div>
+      </div>
+    </div>`;
+
+  // Desglose gastos fijos
+  const gastosFijos = fijos.filter(f => f.tipo !== 'ingreso');
+  if (gastosFijos.length > 0) {
+    html += `<div class="resumen-seccion">💳 Gastos personales fijos</div>`;
+    html += `<div class="resumen-cat">
+      <div class="resumen-cat-header">
+        <div class="resumen-cat-nombre">Total fijos mensuales</div>
+        <div class="resumen-cat-monto" style="color:var(--naranja)">$${totalFijosGastos.toLocaleString('es-AR',{maximumFractionDigits:0})}</div>
+      </div>
+      <div class="resumen-cat-items">
+        ${gastosFijos.map(f => `<div class="resumen-item-row">
+          <span>${f.emoji} ${f.nombre}${f.notas ? ` <span style="color:var(--gris);font-size:11px">${f.notas}</span>` : ''}</span>
+          <span style="color:var(--naranja)">$${f.monto.toLocaleString('es-AR',{maximumFractionDigits:0})}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Desglose gastos variables (compras/recargas del mes)
+  if (registros.length > 0) {
+    html += `<div class="resumen-seccion">🛒 Gastos variables del mes</div>`;
+    const cats = {};
+    registros.forEach(r => {
+      const precio = r.precio || 0;
+      const catKey = (Array.isArray(r.categorias) ? r.categorias[0] : r.categoria) || 'Otro';
+      if (!cats[catKey]) cats[catKey] = { total: 0, items: [] };
+      cats[catKey].total += precio;
+      cats[catKey].items.push(r);
+    });
+
+    Object.keys(cats).sort((a,b) => cats[b].total - cats[a].total).forEach(cat => {
+      const c = cats[cat];
+      const pct = totalVariables > 0 ? ((c.total / totalVariables) * 100).toFixed(0) : 0;
+      html += `<div class="resumen-cat">
+        <div class="resumen-cat-header">
+          <div class="resumen-cat-nombre">${cat} <span class="resumen-porcentaje">${pct}%</span></div>
+          <div class="resumen-cat-monto">$${c.total.toLocaleString('es-AR',{maximumFractionDigits:0})}</div>
+        </div>
+        <div class="resumen-cat-items">
+          ${c.items.map(r => {
+            const allCats = Array.isArray(r.categorias) ? r.categorias : [r.categoria || 'Otro'];
+            return `<div class="resumen-item-row">
+              <span>${r.emoji} ${r.nombre} <span style="color:var(--gris);font-size:11px">${allCats.join(', ')}${r.tipo === 'recarga' ? ' · recarga' : ''}</span></span>
+              <span>$${(r.precio||0).toLocaleString('es-AR',{maximumFractionDigits:0})}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    });
+  } else if (gastosFijos.length === 0) {
+    html += `<div class="empty">
+      <div class="empty-icon">📊</div>
+      <div class="empty-title">Sin registros este mes</div>
+      <div class="empty-desc">Los gastos aparecen cuando cargás productos o gastos personales.</div>
+    </div>`;
+  }
+
+  cont.innerHTML = html;
+}
+
+function cambiarMes(dir) {
+  mesSel += dir;
+  if (mesSel > 11) { mesSel = 0; anioSel++; }
+  if (mesSel < 0) { mesSel = 11; anioSel--; }
+  renderResumen();
+}
+
+// ============================================================
+// RENDER HISTORIAL
+// ============================================================
+function renderHistorial() {
+  const log = getLog();
+  const cont = document.getElementById('historial-contenido');
+
+  if (log.length === 0) {
+    cont.innerHTML = `<div class="empty">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">Sin historial</div>
+      <div class="empty-desc">Acá aparecen todas las compras y recargas registradas.</div>
+    </div>`;
+    return;
+  }
+
+  // Group by day
+  const dias = {};
+  log.forEach(entry => {
+    const key = new Date(entry.fecha).toDateString();
+    if (!dias[key]) dias[key] = { label: formatFechaLarga(entry.fecha), entries: [] };
+    dias[key].entries.push(entry);
+  });
+
+  let html = '';
+  Object.keys(dias).forEach(key => {
+    const d = dias[key];
+    html += `<div class="log-dia">
+      <div class="log-dia-titulo">📅 ${d.label}</div>
+      ${d.entries.map(r => {
+        const allCats = Array.isArray(r.categorias) ? r.categorias : [r.categoria || 'Otro'];
+        return `<div class="log-row">
+          <div class="log-emoji">${r.emoji}</div>
+          <div class="log-info">
+            <div class="log-nombre">${r.nombre}</div>
+            <div class="log-detalles">${allCats.join(' · ')} · ${r.tipo === 'recarga' ? '🔄 Recarga' : '🛒 Compra'} · ${r.diasDuracion}d · ${r.cantidad} ${r.unidad || 'u.'}</div>
+          </div>
+          <div class="log-precio">${r.precio ? '$' + (r.precio).toLocaleString('es-AR', {maximumFractionDigits:0}) : '—'}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  });
+
+  cont.innerHTML = html;
+}
+
+// ============================================================
+// ELIMINAR
+// ============================================================
+function eliminarItem(id) {
+  if (!confirm('¿Eliminar este recurso? También se borrarán sus registros de gastos.')) return;
+  let items = getData();
+  items = items.filter(x => x.id !== id);
+  setData(items);
+  // Eliminar del log para que no afecte los costos
+  let log = getLog();
+  log = log.filter(e => e.itemId !== id);
+  setLog(log);
+  if (paginaActual === 'inicio') renderInicio();
+  if (paginaActual === 'stock') renderStock();
+  if (paginaActual === 'resumen') renderResumen();
+  if (paginaActual === 'historial') renderHistorial();
+  checkAlertas();
+}
+
+// ============================================================
+// LIMPIAR TODO
+// ============================================================
+function limpiarTodo() {
+  if (!confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')) return;
+  localStorage.removeItem(DB_KEY);
+  localStorage.removeItem(LOG_KEY);
+  localStorage.removeItem(FIJOS_KEY);
+  renderInicio();
+  renderStock();
+  alert('Datos eliminados.');
+}
+
+// ============================================================
+// FORMAT HELPERS
+// ============================================================
+function formatFecha(ts) {
+  const d = new Date(ts);
+  return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+}
+function formatFechaCorta(ts) {
+  const d = new Date(ts);
+  return `${d.getDate()}/${d.getMonth()+1}`;
+}
+function formatFechaLarga(ts) {
+  const d = new Date(ts);
+  return `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+// ============================================================
+// PWA INSTALL BANNER
+// ============================================================
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  renderInstallBanner();
+});
+
+function renderInstallBanner() {
+  const wrap = document.getElementById('install-banner-wrap');
+  if (!wrap) return;
+
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
+  if (isStandalone) { wrap.innerHTML = ''; return; }
+
+  if (deferredPrompt) {
+    wrap.innerHTML = `<div class="install-banner">
+      <div style="font-size:24px">📲</div>
+      <div class="install-banner-text">
+        <b>Guardá en pantalla de inicio</b>
+        Para recibir alertas y usar sin internet
+      </div>
+      <button class="install-btn-sm" onclick="instalarPWA()">Instalar</button>
+    </div>`;
+  } else {
+    // iOS / manual instruction
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIOS) {
+      wrap.innerHTML = `<div class="install-banner">
+        <div style="font-size:24px">📲</div>
+        <div class="install-banner-text">
+          <b>Guardá en pantalla de inicio</b>
+          Tocá <b>Compartir</b> ↑ → "Agregar al inicio"
+        </div>
+      </div>`;
+    }
+  }
+}
+
+function instalarPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => { deferredPrompt = null; renderInstallBanner(); });
+}
+
+// ============================================================
+// SERVICE WORKER (inline via Blob)
+// ============================================================
+const SW_CODE = `
+const CACHE = 'cuidado-v1';
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/'))));
+});
+`;
+
+if ('serviceWorker' in navigator) {
+  const blob = new Blob([SW_CODE], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(() => {});
+}
+
+// ============================================================
+// PERIODIC CHECK (every 30min while open + on load)
+// ============================================================
+function tick() {
+  actualizarHeader();
+  checkAlertas();
+  // If it's the alert hour, show notification
+  const now = new Date();
+  const horaConfig = (cfg.hora || '09:00').split(':');
+  if (parseInt(horaConfig[0]) === now.getHours() && parseInt(horaConfig[1]) === now.getMinutes()) {
+    checkAlertas();
+  }
+}
+
+setInterval(tick, 60 * 1000); // check every minute
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  cargarConfig();
+  actualizarHeader();
+  renderInicio();
+  checkAlertas();
+  // Actualizar hora cada 1min
+  setInterval(actualizarHeader, 30000);
+});
+
+// Visibilidad: cuando vuelve al foco, actualizar
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    actualizarHeader();
+    checkAlertas();
+    if (paginaActual === 'inicio') renderInicio();
+    if (paginaActual === 'stock') renderStock();
+  }
+});
+</script>
+
+<!-- MODAL GASTO FIJO / INGRESO -->
+<div class="modal-overlay" id="gasto-overlay" onclick="cerrarGastoModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="gasto-modal-title">Nuevo gasto personal</div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <div class="raciones-toggle">
+          <button class="modo-btn activo" id="tipo-gasto-btn" onclick="setTipoGasto('gasto')">💳 Gasto fijo</button>
+          <button class="modo-btn" id="tipo-ingreso-btn" onclick="setTipoGasto('ingreso')">💰 Ingreso</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ícono</label>
+        <div class="emoji-grid" id="emoji-grid-gasto"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input class="form-input" id="gasto-nombre" placeholder="Ej: Obra Social, Jubilación, Peluquería...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Monto mensual</label>
+        <input class="form-input" id="gasto-monto" type="number" min="0" placeholder="$ 0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas (opcional)</label>
+        <input class="form-input" id="gasto-notas" placeholder="Ej: se paga el 10 de cada mes">
+      </div>
+      <input type="hidden" id="gasto-edit-id">
+      <button class="btn-primary" onclick="guardarGasto()">✅ Guardar</button>
+      <button class="btn-cancel" onclick="cerrarGastoModalBtn()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// GASTOS FIJOS E INGRESOS
+// ============================================================
+const FIJOS_KEY = 'cd_fijos';
+function getFijos() { try { return JSON.parse(localStorage.getItem(FIJOS_KEY) || '[]'); } catch(e) { return []; } }
+function setFijos(d) { localStorage.setItem(FIJOS_KEY, JSON.stringify(d)); }
+
+let tipoGastoActual = 'gasto';
+let emojiGastoSel = '💳';
+
+const EMOJIS_GASTO = ['💳','🏥','💊','🚑','📺','📱','💈','🏋️','🎭','🚗','⚡','💧','🔥','🍽️','🌐','📰','🏠','💰','🎁','✂️','👓','🦽','🛁','🩺'];
+
+function setTipoGasto(tipo) {
+  tipoGastoActual = tipo;
+  document.getElementById('tipo-gasto-btn').classList.toggle('activo', tipo === 'gasto');
+  document.getElementById('tipo-ingreso-btn').classList.toggle('activo', tipo === 'ingreso');
+  document.getElementById('gasto-modal-title').textContent = tipo === 'ingreso' ? 'Nuevo ingreso' : 'Nuevo gasto personal';
+  emojiGastoSel = tipo === 'ingreso' ? '💰' : '💳';
+  renderEmojiGridGasto();
+}
+
+function renderEmojiGridGasto() {
+  const g = document.getElementById('emoji-grid-gasto');
+  if (!g) return;
+  g.innerHTML = EMOJIS_GASTO.map(e =>
+    `<button class="emoji-btn ${e === emojiGastoSel ? 'sel' : ''}" onclick="selEmojiGasto('${e}')">${e}</button>`
+  ).join('');
+}
+
+function selEmojiGasto(e) {
+  emojiGastoSel = e;
+  renderEmojiGridGasto();
+}
+
+function abrirModalGasto(id) {
+  tipoGastoActual = 'gasto';
+  emojiGastoSel = '💳';
+  document.getElementById('gasto-edit-id').value = '';
+  document.getElementById('gasto-nombre').value = '';
+  document.getElementById('gasto-monto').value = '';
+  document.getElementById('gasto-notas').value = '';
+  document.getElementById('gasto-modal-title').textContent = 'Nuevo gasto personal';
+  document.getElementById('tipo-gasto-btn').classList.add('activo');
+  document.getElementById('tipo-ingreso-btn').classList.remove('activo');
+
+  if (id) {
+    const fijos = getFijos();
+    const f = fijos.find(x => x.id === id);
+    if (f) {
+      tipoGastoActual = f.tipo || 'gasto';
+      emojiGastoSel = f.emoji || '💳';
+      document.getElementById('gasto-edit-id').value = id;
+      document.getElementById('gasto-nombre').value = f.nombre;
+      document.getElementById('gasto-monto').value = f.monto;
+      document.getElementById('gasto-notas').value = f.notas || '';
+      document.getElementById('gasto-modal-title').textContent = 'Editar';
+      document.getElementById('tipo-gasto-btn').classList.toggle('activo', tipoGastoActual === 'gasto');
+      document.getElementById('tipo-ingreso-btn').classList.toggle('activo', tipoGastoActual === 'ingreso');
+    }
+  }
+  renderEmojiGridGasto();
+  document.getElementById('gasto-overlay').classList.add('open');
+}
+
+function cerrarGastoModal(e) {
+  if (e.target === document.getElementById('gasto-overlay')) cerrarGastoModalBtn();
+}
+function cerrarGastoModalBtn() {
+  document.getElementById('gasto-overlay').classList.remove('open');
+}
+
+function guardarGasto() {
+  const nombre = document.getElementById('gasto-nombre').value.trim();
+  if (!nombre) { alert('Ingresá un nombre'); return; }
+  const monto = parseFloat(document.getElementById('gasto-monto').value) || 0;
+  const notas = document.getElementById('gasto-notas').value.trim();
+  const editId = document.getElementById('gasto-edit-id').value;
+
+  let fijos = getFijos();
+  if (editId) {
+    const idx = fijos.findIndex(x => x.id === editId);
+    if (idx > -1) {
+      fijos[idx].nombre = nombre;
+      fijos[idx].monto = monto;
+      fijos[idx].notas = notas;
+      fijos[idx].emoji = emojiGastoSel;
+      fijos[idx].tipo = tipoGastoActual;
+    }
+  } else {
+    fijos.push({
+      id: 'fijo_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+      nombre, monto, notas,
+      emoji: emojiGastoSel,
+      tipo: tipoGastoActual,
+      creadoEn: Date.now()
+    });
+  }
+  setFijos(fijos);
+  cerrarGastoModalBtn();
+  renderFijos();
+  if (paginaActual === 'resumen') renderResumen();
+}
+
+function eliminarGasto(id) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  let fijos = getFijos();
+  fijos = fijos.filter(x => x.id !== id);
+  setFijos(fijos);
+  renderFijos();
+  if (paginaActual === 'resumen') renderResumen();
+}
+
+function renderFijos() {
+  const fijos = getFijos();
+  const ingresos = fijos.filter(f => f.tipo === 'ingreso');
+  const gastos = fijos.filter(f => f.tipo !== 'ingreso');
+
+  const listaIngresos = document.getElementById('ingresos-lista');
+  const listaFijos = document.getElementById('fijos-lista');
+  if (!listaIngresos || !listaFijos) return;
+
+  if (ingresos.length === 0) {
+    listaIngresos.innerHTML = `<div style="font-size:13px;color:var(--gris);padding:8px 0">Sin ingresos cargados. Agregá jubilación, pensión u otros.</div>`;
+  } else {
+    listaIngresos.innerHTML = ingresos.map(f => `
+      <div class="gasto-fijo-card">
+        <div class="gasto-fijo-icon">${f.emoji}</div>
+        <div class="gasto-fijo-info">
+          <div class="gasto-fijo-nombre">${f.nombre}</div>
+          ${f.notas ? `<div class="gasto-fijo-desc">${f.notas}</div>` : ''}
+        </div>
+        <div class="gasto-fijo-monto" style="color:var(--verde-claro)">+$${f.monto.toLocaleString('es-AR',{maximumFractionDigits:0})}</div>
+        <div class="item-acciones">
+          <button class="btn-icon" onclick="abrirModalGasto('${f.id}')" title="Editar">✏️</button>
+          <button class="btn-icon danger" onclick="eliminarGasto('${f.id}')" title="Eliminar">🗑️</button>
+        </div>
+      </div>`).join('');
+  }
+
+  if (gastos.length === 0) {
+    listaFijos.innerHTML = `<div style="font-size:13px;color:var(--gris);padding:8px 0">Sin gastos fijos cargados. Agregá obra social, servicios, etc.</div>`;
+  } else {
+    listaFijos.innerHTML = gastos.map(f => `
+      <div class="gasto-fijo-card">
+        <div class="gasto-fijo-icon">${f.emoji}</div>
+        <div class="gasto-fijo-info">
+          <div class="gasto-fijo-nombre">${f.nombre}</div>
+          ${f.notas ? `<div class="gasto-fijo-desc">${f.notas}</div>` : ''}
+        </div>
+        <div class="gasto-fijo-monto">-$${f.monto.toLocaleString('es-AR',{maximumFractionDigits:0})}</div>
+        <div class="item-acciones">
+          <button class="btn-icon" onclick="abrirModalGasto('${f.id}')" title="Editar">✏️</button>
+          <button class="btn-icon danger" onclick="eliminarGasto('${f.id}')" title="Eliminar">🗑️</button>
+        </div>
+      </div>`).join('');
+  }
+}
+</script>
+
+
+<script>
+(function() {
+  const manifest = {
+    name: "Cuidado Diario",
+    short_name: "Cuidado",
+    description: "Control de rutinas y stock para personas mayores",
+    start_url: ".",
+    display: "standalone",
+    background_color: "#FEFAE0",
+    theme_color: "#2D6A4F",
+    icons: [
+      {
+        src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%232D6A4F'/><text y='370' x='60' font-size='380'>🌿</text></svg>",
+        sizes: "512x512",
+        type: "image/svg+xml"
+      }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type: 'application/manifest+json'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = url;
+  document.head.appendChild(link);
+})();
+</script>
+
+<!-- FIREBASE PUSH NOTIFICATIONS -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA3FzHpV32AatAc92H-qntYB2amjZWReUE",
+  authDomain: "cuidandot-b4465.firebaseapp.com",
+  projectId: "cuidandot-b4465",
+  storageBucket: "cuidandot-b4465.firebasestorage.app",
+  messagingSenderId: "408840051724",
+  appId: "1:408840051724:web:9c4365203e990ab56e2229"
+};
+const VAPID_KEY = "BOE5fSmfTOibmkzY-NtJBgTGmyTRr9IolwN40W7wLDkpDtPFBOn_Itd-n-YrUHc6C73Q7_36_EAZckWF1nHZQeI";
+
+let messaging;
+
+async function iniciarFirebase() {
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    messaging = firebase.messaging();
+    messaging.onMessage((payload) => {
+      const n = payload.notification || {};
+      if (n.title && Notification.permission === 'granted') {
+        new Notification(n.title, { body: n.body, icon: n.icon || '' });
+      }
+    });
+    await registrarToken();
+  } catch(e) { console.warn('Firebase:', e); }
+}
+
+async function registrarToken() {
+  try {
+    if (Notification.permission !== 'granted') return;
+    const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+    if (!token) return;
+    localStorage.setItem('cd_fcm_token', token);
+    await sincronizarConServidor(token);
+  } catch(e) { console.warn('Token:', e); }
+}
+
+async function sincronizarConServidor(tokenParam) {
+  const token = tokenParam || localStorage.getItem('cd_fcm_token');
+  if (!token) return;
+  try {
+    const cfgLocal = JSON.parse(localStorage.getItem('cd_config') || '{}');
+    const items    = JSON.parse(localStorage.getItem('cd_items')  || '[]');
+    const fijos    = JSON.parse(localStorage.getItem('cd_fijos')  || '[]');
+    await fetch('/.netlify/functions/register-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token,
+        config: {
+          nombre:   cfgLocal.nombre   || '',
+          persona:  cfgLocal.persona  || '',
+          hora:     cfgLocal.hora     || '09:00',
+          notifOff: cfgLocal.notifOff || false
+        },
+        items,
+        fijos
+      })
+    });
+  } catch(e) { /* silencioso */ }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  if ('serviceWorker' in navigator) iniciarFirebase();
+});
+
+// Re-sincronizar cuando el usuario guarda config o productos
+const _guardarConfigOrig = typeof guardarConfig === 'function' ? guardarConfig : null;
+document.addEventListener('cd-sync', () => sincronizarConServidor());
+</script>
+
+</body>
+</html>
