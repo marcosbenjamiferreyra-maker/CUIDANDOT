@@ -90,7 +90,7 @@ exports.handler = async (event, context) => {
       if (config.notifOff) continue;
  
       // Saltar si no es la hora configurada por este usuario
-      //if (!esHoraDeAviso(config.hora || '09:00')) continue;
+      if (!esHoraDeAviso(config.hora || '09:00')) continue;
  
       // Verificar que no se mandó alerta hoy ya
       const hoyKey = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
